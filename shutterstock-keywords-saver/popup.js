@@ -3,10 +3,12 @@
   const KEYWORDS_WRAPPER_ID = 'keywords-wrapper';
   /** An ID of keywords count wrapper. */
   const KEYWORDS_COUNT_WRAPPER_ID = 'keywords-count';
-  /** An ID of copy button. */
-  const COPY_BTN_ID = 'copy-btn';
   /** An ID of clear button. */
   const CLEAR_BTN_ID = 'clear-btn';
+  /** An ID of copy ALL button. */
+  const COPY_ALL_BTN_ID = 'copy-all-btn';
+  /** An ID of copy first 50 button. */
+  const COPY_FIRST_50_BTN_ID = 'copy-50-btn';
 
   /**
    * Gets stored keywords from background script and sort them by count.
@@ -58,11 +60,19 @@
   }
 
   /**
-   * Copies all selected keywords to clipboard.
+   * Copies selected keywords to clipboard.
+   * @param count Count of keywords to copy. Not specify to copy all keywords.
    */
-  function copy() {
+  function copy(count) {
     getKeywords(keywords => {
-      const textToCopy = keywords.map(({ word }) => word).join(', ');
+      const textToCopy = keywords
+        .filter((item, index) => {
+          return count === undefined
+            ? true
+            : index < count;
+        })
+        .map(({ word }) => word)
+        .join(', ');
       copyToClipboard(textToCopy);
     });
   }
@@ -85,11 +95,14 @@
    * Initialization function.
    */
   function init() {
-    const copyBtn = document.getElementById(COPY_BTN_ID);
     const clearBtn = document.getElementById(CLEAR_BTN_ID);
+    const copyAllBtn = document.getElementById(COPY_ALL_BTN_ID);
+    const copyFirst50Btn = document.getElementById(COPY_FIRST_50_BTN_ID);
 
-    copyBtn.onclick = copy;
     clearBtn.onclick = clear;
+    copyAllBtn.onclick = () => copy();
+    copyFirst50Btn.onclick = () => copy(50);
+
     getKeywords(showKeyWords);
   }
 
