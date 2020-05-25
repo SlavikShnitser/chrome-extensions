@@ -39,13 +39,22 @@
     keyWordsCountWrapper.innerText = `Total count: ${keywords.length}`;
     keyWordsWrapper.innerHTML = '';
     keywords.forEach(({word, count}) => {
-      const color = 255 - (count - 1) * 30;
       const div = document.createElement('div');
       div.innerText = word;
       div.classList.add('keyword');
-      div.style.backgroundColor = `rgb(${color}, ${color}, ${color})`;
+      div.style.backgroundColor = getKeywordColor(count);
       keyWordsWrapper.appendChild(div)
     });
+  }
+
+  /**
+   * Calculates background color for keyword based on its count.
+   * @param count Defines how many times keyword was used.
+   * @returns {string} RGB color string.
+   */
+  function getKeywordColor(count) {
+    const color = 255 - (count - 1) * 30;
+    return `rgb(${color}, ${color}, ${color})`;
   }
 
   /**
