@@ -1,0 +1,33 @@
+{
+	"manifest_version": 2,
+	"name": "Shutterstock Keywords Saver",
+	"version": "0.1",
+
+	"icons": {
+		"16": "assets/icon.png",
+		"48": "assets/icon.png",
+		"128": "assets/icon.png"
+	},
+
+	"permissions": [
+		"activeTab"
+	],
+
+	"background": {
+		"scripts": [
+			"js/background.js"
+		],
+		"persistent": true
+	},
+
+	"content_scripts": [{
+		"matches": ["https://www.shutterstock.com/*"],
+		"js": ["js/content.js"]
+	}],
+
+	"browser_action": {
+		"default_icon": "assets/icon.png",
+		"default_popup": "popup.html",
+		"default_title": "Shutterstock Keywords Saver"
+	}
+}
