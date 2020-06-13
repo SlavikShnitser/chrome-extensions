@@ -1,24 +1,70 @@
 (() => {
 
+	const TWO_OR_MORE_SPACES_REGEXP = /[ \t]{2,}/g;
+	const FIRST_CHARACTER_SPACE_REGEXP = /^ /;
+
 	const TEST_STRING = "As a user, I do not want appropriate message, so that I have the information";
 
 	const STYLES = `
-.req-force-highlights {
+.req-forge-highlights {
 	position: fixed;
 	background-color: transparent;
 	color: transparent;
 	pointer-events: none;
 }
-.req-force-highlights mark {
+.req-forge-highlights mark {
+	position: relative;
 	color: transparent;
 	border-bottom: 2px solid red;
 	background: transparent;
+	pointer-events: auto;
 }
-.req-force-highlights mark.crit {
+.req-forge-highlights mark.crit {
     border-bottom: 2px solid red;
 }
-.req-force-highlights mark.sugg {
+.req-forge-highlights mark.crit .req-forge-tooltip .circle {
+	background-color: red;
+}
+.req-forge-highlights mark.sugg {
     border-bottom: 2px solid #3090C7;
+}
+.req-forge-highlights mark.sugg .req-forge-tooltip .circle {
+	background-color: #3090C7;
+}
+.req-forge-highlights mark .req-forge-tooltip {
+	display: none;
+	position: absolute;
+	left: 0;
+  top: 20px;
+  transform: translateX(-50%);
+	width: max-content;
+  max-width: 500px;
+  min-width: 200px;
+	border: 1px solid #ebebeb;
+	padding: 10px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.5);
+  background-color: #f5f5f5;
+  z-index: 1;
+}
+.req-forge-highlights mark:hover .req-forge-tooltip {
+	display: block;
+}
+.req-forge-highlights mark .req-forge-tooltip .circle {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 100%;
+	margin-right: 8px;
+}
+.req-forge-highlights mark .req-forge-tooltip .title {
+	display: inline-block;
+	color: rgba(0, 0, 0, 0.2);
+	font-size: 16px;
+}
+.req-forge-highlights mark .req-forge-tooltip .details {
+	margin-top: 10px;
+	color: rgb(0, 0, 0);
+	font-size: 14px;
 }
 `;
 
@@ -40,6 +86,8 @@
 		['writingMode', 'writing-mode']
 	];
 
+	const inputHighlightMap = new Map();
+
 	/**
 	 * Utility function to add CSS.
 	 * @param {string} styleString
@@ -54,26 +102,72 @@
 		chrome.runtime.sendMessage({ type: "check_string", textData }, callback);
 	}
 
-	function decorateElement(textarea) {
-		const { width, height, top, left } = textarea.getBoundingClientRect();
-		const parent = textarea.parentElement;
+	function decorateElement(inputElement) {
+		if (inputHighlightMap.has(inputElement)) {
+			return inputHighlightMap.get(inputElement);
+		}
+
 		const highlightsWrapper = document.createElement("div");
-		highlightsWrapper.classList.add('req-force-highlights');
+		inputHighlightMap.set(inputElement, highlightsWrapper);
+
+		highlightsWrapper.classList.add('req-forge-highlights');
+
+		copyDimensions(inputElement, highlightsWrapper);
+		copyStyles(inputElement, highlightsWrapper);
+
+		inputElement.onkeydown = () => highlightsWrapper.innerHTML = '';
+
+		new ResizeObserver(() => {
+			copyDimensions(inputElement, highlightsWrapper);
+		}).observe(inputElement);
+		window.onresize = () => copyDimensions(inputElement, highlightsWrapper);
+		window.onscroll = () => copyDimensions(inputElement, highlightsWrapper);
+
+		inputElement.parentElement.insertBefore(highlightsWrapper, inputElement);
+
+		return highlightsWrapper;
+	}
+
+	function copyDimensions(inputElement, highlightsWrapper) {
+		const { width, height, top, left } = inputElement.getBoundingClientRect();
 		highlightsWrapper.style.width = `${width}px`;
 		highlightsWrapper.style.height = `${height}px`;
 		highlightsWrapper.style.top = `${top}px`;
 		highlightsWrapper.style.left = `${left}px`;
+	}
 
-		const computedStylesMap = textarea.computedStyleMap();
+	function copyStyles(inputElement, highlightsWrapper) {
+		const computedStylesMap = inputElement.computedStyleMap();
 		STYLE_PROPERTIES_TO_COPY.forEach(([camelCasedProperty, dashSeparatedProperty]) => {
-			highlightsWrapper.style[camelCasedProperty] = computedStylesMap.get(dashSeparatedProperty).toString();
+			const computedStyleProp = computedStylesMap.get(dashSeparatedProperty);
+			if (computedStyleProp) {
+				highlightsWrapper.style[camelCasedProperty] = computedStyleProp.toString();
+			}
 		});
+	}
 
-		textarea.onkeydown = () => highlightsWrapper.innerHTML = '';
+	function addTooltips(highlightElement, combinedErrors) {
+		const markElements = highlightElement.querySelectorAll('mark');
 
-		parent.insertBefore(highlightsWrapper, textarea);
+		[...markElements].forEach((mark, i) => {
+			const error = combinedErrors[i];
+			const tooltip = document.createElement('div');
+			tooltip.classList.add('req-forge-tooltip');
+			const circle = document.createElement('div');
+			circle.classList.add('circle');
+			const title = document.createElement('div');
+			title.classList.add('title');
+			title.innerText = error.rule;
+			const details = document.createElement('div');
+			details.classList.add('details');
+			details.innerText = error.details;
 
-		return highlightsWrapper;
+			tooltip.appendChild(circle);
+			tooltip.appendChild(title);
+			tooltip.appendChild(details);
+
+			mark.appendChild(tooltip);
+		});
 	}
 
 	/**
@@ -89,9 +183,11 @@
 
 			if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
 				const highlightElement = decorateElement(element);
-				checkString(element.value, (errors) => {
-					console.log(errors);
-					highlightElement.innerHTML = highlightWords(errors, element.value);
+				const value = element.value.replace(TWO_OR_MORE_SPACES_REGEXP, ' ').replace(FIRST_CHARACTER_SPACE_REGEXP, '');
+				checkString(value, (errors) => {
+					const [html, combinedErrors] = highlightWords(errors, value);
+					highlightElement.innerHTML = html;
+					addTooltips(highlightElement, combinedErrors);
 				});
 			}
 		}
@@ -134,7 +230,8 @@
 				startOffset += 26;
 			}
 		}
-		return result;
+
+		return [result, errors.filter(e => e.existingTokens.length)];
 	};
 
 	const shouldConsolidate = (tokenA, tokenAType, tokenB, tokenBType) => {
