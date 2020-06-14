@@ -1,4 +1,8 @@
-
+/**
+ * Passing data to the server and return a response.
+ * @param textData Text to check.
+ * @returns {Promise} An array of errors.
+ */
 async function checkString(textData) {
 	const response = await fetch('https://dev.api.reqforge.com/analyze', {
 		method: 'POST',
@@ -43,9 +47,6 @@ const onMessageReceived = (message, sender, sendResponse) => {
 /** Initialization function. */
 function init() {
 	chrome.runtime.onMessage.addListener(onMessageReceived);
-	chrome.browserAction.onClicked.addListener(() => sendMessageToActiveTab({
-		type: "validate_active_input"
-	}));
 }
 
 init();
