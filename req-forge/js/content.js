@@ -35,8 +35,11 @@
 	const replaceWord = (string, replace, start, end) =>
 		`${string.slice(0, start)}${replace}${string.slice(end)}`;
 
-	const EXTENSION_ICON_PATH = 'http://res2.weblium.site/res/5e223207439d4b0022158010/5e22399d439d4b0022159121_optimized';
+	const EXTENSION_ICON_PATH = 'https://res2.weblium.site/res/5e223207439d4b0022158010/5e22399d439d4b0022159121_optimized';
 	const STYLES = `
+.hidden {
+	display: none;	
+}
 .req-forge-icon {
 	position: fixed;
 	width: 35px;
@@ -55,14 +58,19 @@
 }
 .req-forge-highlights mark {
 	color: transparent;
+}
+.req-forge-highlights mark,
+.req-forge-modal mark {
 	border-bottom: 2px solid red;
 	background: transparent;
 	pointer-events: auto;
 }
-.req-forge-highlights mark.crit {
+.req-forge-highlights mark.crit,
+.req-forge-modal mark.crit {
     border-bottom: 2px solid red;
 }
-.req-forge-highlights mark.sugg {
+.req-forge-highlights mark.sugg,
+.req-forge-modal mark.sugg {
     border-bottom: 2px solid #3090C7;
 }
 
@@ -106,6 +114,40 @@
 	color: rgb(0, 0, 0);
 	font-size: 14px;
 }
+.req-forge-tooltip .suggestions > div {
+	display: inline-flex;
+	align-items: center;
+  justify-content: center;
+  height: 24px;
+  margin-top: 10px;
+  margin-right: 8px;
+  padding: 0 8px;
+	border-radius: 16px;
+  background-color: #b3e5fc;
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.req-forge-tooltip .suggestions.disabled > div {
+	background-color: #ebebeb;
+	cursor: default;
+}
+.req-forge-modal {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	max-width: 600px;
+	padding: 30px;
+  border: 1px solid #ebebeb;
+  border-radius: 5px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.5);
+  background-color: #fff;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  font-size: 14px;
+  z-index: 9999998;
+}
 `;
 
 	const STYLE_PROPERTIES_TO_COPY = [
@@ -128,6 +170,8 @@
 
 	const inputHighlightMap = new Map();
 	let tooltipElement;
+	let modalElement;
+	let activeInput;
 
 	/**
 	 * Sends data to background script.
@@ -149,16 +193,32 @@
 		}
 
 		const highlightsWrapper = document.createElement("div");
-		inputHighlightMap.set(inputElement, highlightsWrapper);
-		highlightsWrapper.classList.add('req-forge-highlights');
+		highlightsWrapper.classList.add('req-forge-highlights', 'hidden');
 
 		const extensionButton = document.createElement('div');
-		extensionButton.classList.add('req-forge-icon');
-		extensionButton.onclick = () => extensionButtonClickHandler(inputElement, highlightsWrapper);
+		extensionButton.classList.add('req-forge-icon', 'hidden');
+		extensionButton.onclick = () => {
+			inputElement.focus();
+			highlightsWrapper.classList.remove('hidden');
+			extensionButton.classList.remove('hidden');
+			extensionButtonClickHandler(inputElement, highlightsWrapper)
+		};
+
+		inputHighlightMap.set(inputElement, {
+			highlightsWrapper, extensionButton
+		});
 
 		copyDimensions(inputElement, highlightsWrapper, extensionButton);
 		copyStyles(inputElement, highlightsWrapper);
 
+		inputElement.addEventListener('focus', () => {
+			activeInput = inputElement;
+			for (let [key, value] of inputHighlightMap) {
+				const methodName = key !== inputElement ? 'add' : 'remove';
+				value.highlightsWrapper.classList[methodName]('hidden');
+				value.extensionButton.classList[methodName]('hidden');
+			}
+		});
 		inputElement.onkeydown = () => highlightsWrapper.innerHTML = '';
 
 		new ResizeObserver(() => {
@@ -213,7 +273,7 @@
 
 			const markElements = highlightsWrapper.querySelectorAll('mark');
 			[...markElements].forEach((mark, i) => {
-				mark.onmouseenter = (e) => showTooltip(e, combinedErrors[i]);
+				mark.onmouseenter = (e) => showTooltip(e, combinedErrors[i], inputElement);
 				mark.onmouseleave = (e) => {
 					if (e.toElement !== tooltipElement) {
 						hideTooltip();
@@ -223,31 +283,59 @@
 		});
 	}
 
-	function showTooltip(e, error) {
+	function showTooltip(e, error, inputElement) {
 		tooltipElement.innerHTML = '';
 		tooltipElement.classList.add('active');
-		tooltipElement.style.left = `${e.clientX}px`
-		tooltipElement.style.top = `${e.clientY + 5}px`
+		tooltipElement.style.left = `${e.clientX}px`;
+		tooltipElement.style.top = `${e.clientY + 5}px`;
 
 		const circle = document.createElement('div');
 		circle.classList.add('circle', getClassNameForError(error));
+		tooltipElement.appendChild(circle);
 
 		const title = document.createElement('div');
 		title.classList.add('title');
 		title.innerText = error.rule;
+		tooltipElement.appendChild(title);
+
+		if (error.newTokens) {
+			const suggestSection = document.createElement('div');
+			suggestSection.classList.add('suggestions');
+			error.newTokens.forEach(({text, beginOffset}) => {
+				const element = document.createElement('div');
+				element.innerText = text;
+
+				if (inputElement) {
+					element.onclick = (e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						const endOffset = beginOffset + error.existingTokens[0].text.length;
+						suggestionClickHandler(inputElement, text, beginOffset, endOffset);
+					};
+				} else {
+					suggestSection.classList.add('disabled');
+				}
+
+				suggestSection.appendChild(element);
+			});
+			tooltipElement.appendChild(suggestSection);
+		}
 
 		const details = document.createElement('div');
 		details.classList.add('details');
 		details.innerText = error.details;
-
-		tooltipElement.appendChild(circle);
-		tooltipElement.appendChild(title);
 		tooltipElement.appendChild(details);
 	}
 
 	function hideTooltip() {
 		tooltipElement.innerHTML = '';
 		tooltipElement.classList.remove('active');
+	}
+
+	function suggestionClickHandler(inputElement, text, beginOffset, endOffset) {
+		inputElement.value = replaceWord(inputElement.value, text, beginOffset, endOffset);
+		inputHighlightMap.get(inputElement).innerHTML = '';
+		hideTooltip();
 	}
 
 	const highlightWords = (data, newTextData) => {
@@ -298,7 +386,25 @@
 	 * @param message Object with type and payload.
 	 */
 	function onMessageReceived(message) {
-		// In case you will need to add communication with background script.
+		switch (message.type) {
+			case "from_context_menu":
+				const [html, combinedErrors] = highlightWords(message.errors, message.text);
+				modalElement.innerHTML = html;
+				modalElement.classList.remove('hidden');
+
+				const markElements = modalElement.querySelectorAll('mark');
+				[...markElements].forEach((mark, i) => {
+					mark.onmouseenter = (e) => showTooltip(e, combinedErrors[i], null);
+					mark.onmouseleave = (e) => {
+						if (e.toElement !== tooltipElement) {
+							hideTooltip();
+						}
+					};
+				});
+				break;
+			default:
+				console.error("Unrecognised message: ", message);
+		}
 	}
 
 	/**
@@ -317,8 +423,20 @@
 	function createTooltip() {
 		tooltipElement = document.createElement('div');
 		tooltipElement.classList.add('req-forge-tooltip');
+		tooltipElement.addEventListener('click', (e) => e.stopPropagation());
 		tooltipElement.onmouseleave = () => hideTooltip();
 		document.body.appendChild(tooltipElement);
+	}
+
+	/**
+	 * Creates modal element.
+	 */
+	function createModal() {
+		modalElement = document.createElement('div');
+		modalElement.classList.add('req-forge-modal', 'hidden');
+		modalElement.addEventListener('click', (e) => e.stopPropagation());
+		document.body.addEventListener('click', () => modalElement.classList.add('hidden'));
+		document.body.appendChild(modalElement);
 	}
 
 	/**
@@ -327,11 +445,7 @@
 	function parsePageInputs() {
 		const textAreas = document.querySelectorAll('textarea');
 		const inputs = document.querySelectorAll('input[type="text"]');
-		[...textAreas, ...inputs].forEach(element => {
-			element.addEventListener('focus', () => {
-				setTimeout(() => decorateElement(element), 300);
-			});
-		});
+		[...textAreas, ...inputs].forEach(element => decorateElement(element));
 	}
 
 	/** Initialization function. */
@@ -339,7 +453,10 @@
 		chrome.runtime.onMessage.addListener(onMessageReceived);
 		addStyle(STYLES);
 		createTooltip();
-		parsePageInputs();
+		createModal();
+		setInterval(() => {
+			parsePageInputs();
+		}, 1000);
 	}
 
 	init();

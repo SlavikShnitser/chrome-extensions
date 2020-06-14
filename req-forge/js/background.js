@@ -47,6 +47,25 @@ const onMessageReceived = (message, sender, sendResponse) => {
 /** Initialization function. */
 function init() {
 	chrome.runtime.onMessage.addListener(onMessageReceived);
+
+	/** Removes all context menu items create d by this extension. */
+	chrome.contextMenus.removeAll();
+
+	/** Adds new context menu item. */
+	chrome.contextMenus.create({
+		contexts: ['selection'],
+		title: 'Validate with ReqForge "%s"',
+		onclick: function(info) {
+			console.log(info);
+			checkString(info.selectionText).then(errors => {
+				sendMessageToActiveTab({
+					type: 'from_context_menu',
+					text: info.selectionText,
+					errors
+				});
+			});
+		}
+	});
 }
 
 init();
