@@ -107,7 +107,7 @@
 .req-forge-tooltip .title {
 	display: inline-block;
 	color: rgba(0, 0, 0, 0.2);
-	font-size: 16px;
+	font-size: 14px;
 }
 .req-forge-tooltip .details {
 	margin-top: 10px;
@@ -204,12 +204,7 @@
 		if (shouldBeHidden) {
 			extensionButton.classList.add('hidden');
 		}
-		extensionButton.onclick = () => {
-			inputElement.focus();
-			highlightsWrapper.classList.remove('hidden');
-			extensionButton.classList.remove('hidden');
-			extensionButtonClickHandler(inputElement, highlightsWrapper)
-		};
+		extensionButton.onclick = () => extensionButtonClickHandler(inputElement);
 
 		inputHighlightMap.set(inputElement, {
 			highlightsWrapper, extensionButton
@@ -272,7 +267,8 @@
 		});
 	}
 
-	function extensionButtonClickHandler(inputElement, highlightsWrapper) {
+	function extensionButtonClickHandler(inputElement) {
+		const highlightsWrapper = inputHighlightMap.get(inputElement).highlightsWrapper;
 		const value = inputElement.value.replace(TWO_OR_MORE_SPACES_REGEXP, ' ').replace(FIRST_CHARACTER_SPACE_REGEXP, '');
 		checkString(value, (errors) => {
 			const [html, combinedErrors] = highlightWords(errors, value);
@@ -342,6 +338,7 @@
 	function suggestionClickHandler(inputElement, text, beginOffset, endOffset) {
 		inputElement.value = replaceWord(inputElement.value, text, beginOffset, endOffset);
 		inputHighlightMap.get(inputElement).highlightsWrapper.innerHTML = '';
+		extensionButtonClickHandler(inputElement);
 		hideTooltip();
 	}
 
@@ -447,12 +444,11 @@
 	}
 
 	/**
-	 * Finds all text ares and text inputs on the page and adds event listeners to them.
+	 * Finds all text ares on the page and adds event listeners to them.
 	 */
 	function parsePageInputs() {
 		const textAreas = document.querySelectorAll('textarea');
-		const inputs = document.querySelectorAll('input[type="text"]');
-		[...textAreas, ...inputs].forEach(element => decorateElement(element));
+		[...textAreas].forEach(element => decorateElement(element));
 	}
 
 	/** Initialization function. */
