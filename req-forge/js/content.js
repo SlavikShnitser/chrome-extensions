@@ -335,7 +335,7 @@
 
 	function suggestionClickHandler(inputElement, text, beginOffset, endOffset) {
 		inputElement.value = replaceWord(inputElement.value, text, beginOffset, endOffset);
-		inputHighlightMap.get(inputElement).innerHTML = '';
+		inputHighlightMap.get(inputElement).highlightsWrapper.innerHTML = '';
 		hideTooltip();
 	}
 
