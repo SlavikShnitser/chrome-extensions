@@ -191,12 +191,13 @@
 		if (inputHighlightMap.has(inputElement)) {
 			return;
 		}
+		const shouldBeHidden = inputElement !== document.activeElement;
 
 		const highlightsWrapper = document.createElement("div");
-		highlightsWrapper.classList.add('req-forge-highlights', 'hidden');
+		highlightsWrapper.classList.add('req-forge-highlights', shouldBeHidden ? 'hidden' : '');
 
 		const extensionButton = document.createElement('div');
-		extensionButton.classList.add('req-forge-icon', 'hidden');
+		extensionButton.classList.add('req-forge-icon', shouldBeHidden ? 'hidden' : '');
 		extensionButton.onclick = () => {
 			inputElement.focus();
 			highlightsWrapper.classList.remove('hidden');
