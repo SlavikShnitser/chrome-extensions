@@ -194,10 +194,16 @@
 		const shouldBeHidden = inputElement !== document.activeElement;
 
 		const highlightsWrapper = document.createElement("div");
-		highlightsWrapper.classList.add('req-forge-highlights', shouldBeHidden ? 'hidden' : '');
+		highlightsWrapper.classList.add('req-forge-highlights');
+		if (shouldBeHidden) {
+			highlightsWrapper.classList.add('hidden');
+		}
 
 		const extensionButton = document.createElement('div');
-		extensionButton.classList.add('req-forge-icon', shouldBeHidden ? 'hidden' : '');
+		extensionButton.classList.add('req-forge-icon');
+		if (shouldBeHidden) {
+			extensionButton.classList.add('hidden');
+		}
 		extensionButton.onclick = () => {
 			inputElement.focus();
 			highlightsWrapper.classList.remove('hidden');
