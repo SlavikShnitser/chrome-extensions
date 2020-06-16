@@ -36,6 +36,7 @@
 		`${string.slice(0, start)}${replace}${string.slice(end)}`;
 
 	const EXTENSION_ICON_PATH = 'https://res2.weblium.site/res/5e223207439d4b0022158010/5e22399d439d4b0022159121_optimized';
+	const MODAL_Z_INDEX = 999999;
 	const STYLES = `
 .hidden {
 	display: none;	
@@ -48,7 +49,7 @@
   background-repeat: no-repeat;
   background-size: 100% 100%;
 	cursor: pointer;
-	z-index: 9999999;
+	z-index: ${MODAL_Z_INDEX - 1};
 }
 .req-forge-highlights {
 	position: fixed;
@@ -86,7 +87,7 @@
   box-shadow: 0 0 5px rgba(0,0,0,0.5);
   background-color: #f5f5f5;
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
-  z-index: 9999999;
+  z-index: ${MODAL_Z_INDEX + 1};
 }
 .req-forge-tooltip.active {
 	display: block;
@@ -133,12 +134,21 @@
 	background-color: #ebebeb;
 	cursor: default;
 }
+.req-forge-modal-wrapper {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.75);
+	z-index: ${MODAL_Z_INDEX};
+}
 .req-forge-modal {
 	position: fixed;
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%, -50%);
-	max-width: 600px;
+	width: 600px;
 	padding: 30px;
   border: 1px solid #ebebeb;
   border-radius: 5px;
@@ -146,7 +156,37 @@
   background-color: #fff;
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   font-size: 14px;
-  z-index: 9999998;
+  z-index: ${MODAL_Z_INDEX};
+}
+.req-forge-modal textarea {
+	width: 100% !important;
+	min-height: 200px !important;
+	margin-bottom: 0 !important;
+	padding: 10px !important;
+	background: #fff !important;
+	border: 1px solid #c8ccd0 !important;
+	font-family: "Roboto", "Helvetica", "Arial", sans-serif !important;
+  font-size: 14px !important;
+  resize: none !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+.req-forge-modal .req-forge-copy-btn {
+	display: inline-block !important;
+	margin-top: 10px !important;
+	padding: 8px 12px !important;
+	color: #fff !important;
+  background-color: rgb(0, 149, 255) !important;
+  border-color: rgb(0, 149, 255) !important;
+  box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.4) !important;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+}
+.req-forge-modal .req-forge-copy-btn:hover {
+	background-color: rgb(0, 119, 204) !important;
+  border-color: rgb(0, 119, 204) !important;
 }
 `;
 
@@ -154,6 +194,7 @@
 		['border', 'border'],
 		['margin', 'margin'],
 		['padding', 'padding'],
+		['boxSizing', 'box-sizing'],
 		['font', 'font'],
 		['direction', 'direction'],
 		['textAlign', 'text-align'],
@@ -170,7 +211,8 @@
 
 	const inputHighlightMap = new Map();
 	let tooltipElement;
-	let modalElement;
+	let modalWrapper;
+	let modalTextArea;
 	let activeInput;
 
 	/**
@@ -204,7 +246,7 @@
 		if (shouldBeHidden) {
 			extensionButton.classList.add('hidden');
 		}
-		extensionButton.onclick = () => extensionButtonClickHandler(inputElement);
+		extensionButton.onclick = () => validateInput(inputElement);
 
 		inputHighlightMap.set(inputElement, {
 			highlightsWrapper, extensionButton
@@ -245,11 +287,19 @@
 		const extensionButtonSize = 35;
 		highlightsWrapper.style.width = `${width}px`;
 		highlightsWrapper.style.height = `${height}px`;
-		highlightsWrapper.style.top = `${top}px`;
-		highlightsWrapper.style.left = `${left}px`;
 
-		extensionButton.style.top = `${top + height - extensionButtonSize}px`;
-		extensionButton.style.left = `${left + width - extensionButtonSize - 70}px`;
+		if (inputElement !== modalTextArea) {
+			highlightsWrapper.style.top = `${top}px`;
+			highlightsWrapper.style.left = `${left}px`;
+		}
+
+		if (inputElement !== modalTextArea) {
+			extensionButton.style.top = `${top + height - extensionButtonSize}px`;
+			extensionButton.style.left = `${left + width - extensionButtonSize - 70}px`;
+		} else {
+			extensionButton.style.bottom = `80px`;
+			extensionButton.style.right = `65px`;
+		}
 	}
 
 	/**
@@ -267,7 +317,7 @@
 		});
 	}
 
-	function extensionButtonClickHandler(inputElement) {
+	function validateInput(inputElement) {
 		const highlightsWrapper = inputHighlightMap.get(inputElement).highlightsWrapper;
 		const value = inputElement.value.replace(TWO_OR_MORE_SPACES_REGEXP, ' ').replace(FIRST_CHARACTER_SPACE_REGEXP, '');
 		checkString(value, (errors) => {
@@ -338,7 +388,7 @@
 	function suggestionClickHandler(inputElement, text, beginOffset, endOffset) {
 		inputElement.value = replaceWord(inputElement.value, text, beginOffset, endOffset);
 		inputHighlightMap.get(inputElement).highlightsWrapper.innerHTML = '';
-		extensionButtonClickHandler(inputElement);
+		validateInput(inputElement);
 		hideTooltip();
 	}
 
@@ -393,12 +443,15 @@
 		switch (message.type) {
 			case "from_context_menu":
 				const [html, combinedErrors] = highlightWords(message.errors, message.text);
-				modalElement.innerHTML = html;
-				modalElement.classList.remove('hidden');
+				const highlightsWrapper = inputHighlightMap.get(modalTextArea).highlightsWrapper;
+				highlightsWrapper.innerHTML = html;
+				modalTextArea.value = message.text;
+				modalWrapper.classList.remove('hidden');
+				modalTextArea.focus();
 
-				const markElements = modalElement.querySelectorAll('mark');
+				const markElements = highlightsWrapper.querySelectorAll('mark');
 				[...markElements].forEach((mark, i) => {
-					mark.onmouseenter = (e) => showTooltip(e, combinedErrors[i], null);
+					mark.onmouseenter = (e) => showTooltip(e, combinedErrors[i], modalTextArea);
 					mark.onmouseleave = (e) => {
 						if (e.toElement !== tooltipElement) {
 							hideTooltip();
@@ -436,11 +489,29 @@
 	 * Creates modal element.
 	 */
 	function createModal() {
-		modalElement = document.createElement('div');
-		modalElement.classList.add('req-forge-modal', 'hidden');
+		modalWrapper = document.createElement('div');
+		modalWrapper.classList.add('req-forge-modal-wrapper', 'hidden');
+
+		const modalElement = document.createElement('div');
+		modalElement.classList.add('req-forge-modal');
 		modalElement.addEventListener('click', (e) => e.stopPropagation());
-		document.body.addEventListener('click', () => modalElement.classList.add('hidden'));
-		document.body.appendChild(modalElement);
+
+		modalTextArea = document.createElement('textarea');
+		modalElement.appendChild(modalTextArea);
+
+		const copyBtn = document.createElement('div');
+		copyBtn.innerText = 'Copy';
+		copyBtn.classList.add('req-forge-copy-btn');
+		copyBtn.addEventListener('click', () => {
+			modalTextArea.focus();
+			modalTextArea.select();
+			document.execCommand('copy');
+		});
+		modalElement.appendChild(copyBtn);
+
+		modalWrapper.addEventListener('click', () => modalWrapper.classList.add('hidden'));
+		modalWrapper.appendChild(modalElement);
+		document.body.appendChild(modalWrapper);
 	}
 
 	/**
