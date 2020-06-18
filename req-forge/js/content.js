@@ -377,6 +377,12 @@
 				suggestSection.appendChild(element);
 			});
 			tooltipElement.appendChild(suggestSection);
+
+			if (inputElement === modalTextArea) {
+				document.body.appendChild(tooltipElement);
+			} else {
+				inputElement.parentElement.appendChild(tooltipElement);
+			}
 		}
 
 		const details = document.createElement('div');
