@@ -302,8 +302,8 @@
 			extensionButton.style.top = `${top + height - extensionButtonSize}px`;
 			extensionButton.style.left = `${left + width - extensionButtonSize - 70}px`;
 		} else {
-			extensionButton.style.bottom = `80px`;
-			extensionButton.style.right = `65px`;
+			extensionButton.style.bottom = `92px`;
+			extensionButton.style.right = `75px`;
 		}
 	}
 
