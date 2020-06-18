@@ -43,8 +43,6 @@
 }
 .req-forge-icon {
 	position: fixed;
-	width: 35px;
-  height: 35px;
   background-image: url("${EXTENSION_ICON_PATH}");
   background-repeat: no-repeat;
   background-size: 100% 100%;
@@ -268,6 +266,13 @@
 		new ResizeObserver(() => {
 			copyDimensions(inputElement, highlightsWrapper, extensionButton);
 		}).observe(inputElement);
+
+		let parent = inputElement.parentElement;
+		while (parent) {
+			parent.addEventListener('resize', () => copyDimensions(inputElement, highlightsWrapper, extensionButton));
+			parent.addEventListener('scroll', () => copyDimensions(inputElement, highlightsWrapper, extensionButton));
+			parent = parent.parentElement;
+		}
 		window.addEventListener('resize', () => copyDimensions(inputElement, highlightsWrapper, extensionButton));
 		window.addEventListener('scroll', () => copyDimensions(inputElement, highlightsWrapper, extensionButton));
 
@@ -284,16 +289,16 @@
 	 */
 	function copyDimensions(inputElement, highlightsWrapper, extensionButton) {
 		const { width, height, top, left } = inputElement.getBoundingClientRect();
-		const extensionButtonSize = 35;
+		const extensionButtonSize = 20;
 		highlightsWrapper.style.width = `${width}px`;
 		highlightsWrapper.style.height = `${height}px`;
+		extensionButton.style.width = `${extensionButtonSize}px`;
+		extensionButton.style.height = `${extensionButtonSize}px`;
 
 		if (inputElement !== modalTextArea) {
 			highlightsWrapper.style.top = `${top}px`;
 			highlightsWrapper.style.left = `${left}px`;
-		}
 
-		if (inputElement !== modalTextArea) {
 			extensionButton.style.top = `${top + height - extensionButtonSize}px`;
 			extensionButton.style.left = `${left + width - extensionButtonSize - 70}px`;
 		} else {
