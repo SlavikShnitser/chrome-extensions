@@ -1,3 +1,17 @@
+
+const CONFIG = {
+	'https://reqforge.atlassian.net/': [
+		{
+			selector: '[data-test-id="platform-inline-card-create.ui.form.summary.styled-text-area"]',
+			checkOnActive: false
+		},
+		{
+			selector: '[data-test-id="issue.views.issue-base.foundation.summary.heading.writeable"] textarea',
+			checkOnActive: true
+		}
+	]
+};
+
 /**
  * Passing data to the server and return a response.
  * @param textData Text to check.
@@ -35,6 +49,12 @@ const onMessageReceived = (message, sender, sendResponse) => {
 	switch(message.type) {
 		case "check_string":
 			checkString(message.textData).then(sendResponse);
+			break;
+		case "get_config":
+			const configKey = Object.keys(CONFIG).find(key => {
+				return message.url.startsWith(key);
+			});
+			sendResponse(configKey ? CONFIG[configKey] : []);
 			break;
 		default:
 			console.error("Unrecognised message: ", message);

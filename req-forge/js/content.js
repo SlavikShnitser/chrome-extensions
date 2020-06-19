@@ -223,11 +223,20 @@
 	}
 
 	/**
+	 * Request configuration for current page from background script.
+	 * @param callback Callback function.
+	 */
+	function getConfigurationForPage(callback) {
+		chrome.runtime.sendMessage({ type: "get_config", url: document.URL }, callback);
+	}
+
+	/**
 	 * For a given input/textarea creates [[highlightsWrapper]] and [[extensionButton]].
 	 * Adds resize and scroll event listeners.
 	 * @param inputElement Input or text area.
+	 * @param checkOnActive {boolean}
 	 */
-	function decorateElement(inputElement) {
+	function decorateElement(inputElement, checkOnActive) {
 		if (inputHighlightMap.has(inputElement)) {
 			return;
 		}
@@ -241,10 +250,10 @@
 
 		const extensionButton = document.createElement('div');
 		extensionButton.classList.add('req-forge-icon');
-		if (shouldBeHidden) {
+		if (shouldBeHidden || checkOnActive) {
 			extensionButton.classList.add('hidden');
 		}
-		extensionButton.onclick = () => validateInput(inputElement);
+		extensionButton.addEventListener('click', () => validateInput(inputElement));
 
 		inputHighlightMap.set(inputElement, {
 			highlightsWrapper, extensionButton
@@ -258,10 +267,22 @@
 			for (let [key, value] of inputHighlightMap) {
 				const methodName = key !== inputElement ? 'add' : 'remove';
 				value.highlightsWrapper.classList[methodName]('hidden');
-				value.extensionButton.classList[methodName]('hidden');
+				if (!checkOnActive) {
+					value.extensionButton.classList[methodName]('hidden');
+				}
 			}
 		});
-		inputElement.onkeydown = () => highlightsWrapper.innerHTML = '';
+
+		let timeout;
+		inputElement.onkeydown = () => {
+			highlightsWrapper.innerHTML = '';
+			if (checkOnActive) {
+				if (timeout) {
+					clearTimeout(timeout);
+				}
+				timeout = setTimeout(() => validateInput(inputElement), 200);
+			}
+		};
 
 		new ResizeObserver(() => {
 			copyDimensions(inputElement, highlightsWrapper, extensionButton);
@@ -278,6 +299,10 @@
 
 		inputElement.parentElement.insertBefore(extensionButton, inputElement);
 		inputElement.parentElement.insertBefore(highlightsWrapper, inputElement);
+
+		if (checkOnActive) {
+			validateInput(inputElement);
+		}
 	}
 
 	/**
@@ -364,6 +389,7 @@
 				element.innerText = text;
 
 				if (inputElement) {
+					element.onmousedown = (e) => e.preventDefault();
 					element.onclick = (e) => {
 						e.preventDefault();
 						e.stopPropagation();
@@ -398,6 +424,7 @@
 
 	function suggestionClickHandler(inputElement, text, beginOffset, endOffset) {
 		inputElement.value = replaceWord(inputElement.value, text, beginOffset, endOffset);
+		inputElement.dispatchEvent(new Event('change', { 'bubbles': true }));
 		inputHighlightMap.get(inputElement).highlightsWrapper.innerHTML = '';
 		validateInput(inputElement);
 		hideTooltip();
@@ -508,6 +535,7 @@
 		modalElement.addEventListener('click', (e) => e.stopPropagation());
 
 		modalTextArea = document.createElement('textarea');
+		modalTextArea.classList.add('req-forge-modal-textarea');
 		modalElement.appendChild(modalTextArea);
 
 		const copyBtn = document.createElement('div');
@@ -526,22 +554,32 @@
 	}
 
 	/**
-	 * Finds all text ares on the page and adds event listeners to them.
+	 * Finds specified text ares on the page and adds event listeners to them.
 	 */
-	function parsePageInputs() {
-		const textAreas = document.querySelectorAll('textarea');
-		[...textAreas].forEach(element => decorateElement(element));
+	function parsePageInputs(pageConfig) {
+		pageConfig.forEach(configItem => {
+			const textAreas = document.querySelectorAll(configItem.selector);
+			[...textAreas].forEach(element => decorateElement(element, configItem.checkOnActive));
+		});
 	}
 
 	/** Initialization function. */
 	function init() {
 		chrome.runtime.onMessage.addListener(onMessageReceived);
+
 		addStyle(STYLES);
 		createTooltip();
 		createModal();
-		setInterval(() => {
-			parsePageInputs();
-		}, 1000);
+
+		getConfigurationForPage(pageConfig => {
+			pageConfig.push({
+				selector: '.req-forge-modal-textarea',
+				checkOnActive: false
+			});
+			setInterval(() => {
+				parsePageInputs(pageConfig);
+			}, 1000);
+		});
 	}
 
 	init();
