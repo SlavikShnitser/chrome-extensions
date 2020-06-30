@@ -38,8 +38,8 @@
 	const EXTENSION_ICON_PATH = 'https://res2.weblium.site/res/5e223207439d4b0022158010/5e22399d439d4b0022159121_optimized';
 	const MODAL_Z_INDEX = 999999;
 	const STYLES = `
-.hidden {
-	display: none;	
+.req-forge-hidden {
+	display: none !important;	
 }
 .req-forge-icon {
 	position: fixed;
@@ -245,13 +245,13 @@
 		const highlightsWrapper = document.createElement("div");
 		highlightsWrapper.classList.add('req-forge-highlights');
 		if (shouldBeHidden) {
-			highlightsWrapper.classList.add('hidden');
+			highlightsWrapper.classList.add('req-forge-hidden');
 		}
 
 		const extensionButton = document.createElement('div');
 		extensionButton.classList.add('req-forge-icon');
 		if (shouldBeHidden || checkOnActive) {
-			extensionButton.classList.add('hidden');
+			extensionButton.classList.add('req-forge-hidden');
 		}
 		extensionButton.addEventListener('click', () => validateInput(inputElement));
 
@@ -266,9 +266,9 @@
 			activeInput = inputElement;
 			for (let [key, value] of inputHighlightMap) {
 				const methodName = key !== inputElement ? 'add' : 'remove';
-				value.highlightsWrapper.classList[methodName]('hidden');
+				value.highlightsWrapper.classList[methodName]('req-forge-hidden');
 				if (!checkOnActive) {
-					value.extensionButton.classList[methodName]('hidden');
+					value.extensionButton.classList[methodName]('req-forge-hidden');
 				}
 			}
 		});
@@ -484,7 +484,7 @@
 				const highlightsWrapper = inputHighlightMap.get(modalTextArea).highlightsWrapper;
 				highlightsWrapper.innerHTML = html;
 				modalTextArea.value = message.text;
-				modalWrapper.classList.remove('hidden');
+				modalWrapper.classList.remove('req-forge-hidden');
 				modalTextArea.focus();
 
 				const markElements = highlightsWrapper.querySelectorAll('mark');
@@ -528,7 +528,7 @@
 	 */
 	function createModal() {
 		modalWrapper = document.createElement('div');
-		modalWrapper.classList.add('req-forge-modal-wrapper', 'hidden');
+		modalWrapper.classList.add('req-forge-modal-wrapper', 'req-forge-hidden');
 
 		const modalElement = document.createElement('div');
 		modalElement.classList.add('req-forge-modal');
@@ -548,7 +548,7 @@
 		});
 		modalElement.appendChild(copyBtn);
 
-		modalWrapper.addEventListener('click', () => modalWrapper.classList.add('hidden'));
+		modalWrapper.addEventListener('click', () => modalWrapper.classList.add('req-forge-hidden'));
 		modalWrapper.appendChild(modalElement);
 		document.body.appendChild(modalWrapper);
 	}
