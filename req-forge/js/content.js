@@ -87,6 +87,9 @@
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   z-index: ${MODAL_Z_INDEX + 1};
 }
+.req-forge-tooltip.req-forge-tooltip-top {
+	transform: translate(-50%, calc(-100% - 10px));
+}
 .req-forge-tooltip.active {
 	display: block;
 }
@@ -371,6 +374,12 @@
 		tooltipElement.classList.add('active');
 		tooltipElement.style.left = `${e.clientX}px`;
 		tooltipElement.style.top = `${e.clientY + 5}px`;
+
+		if (e.clientY > window.innerHeight / 2) {
+			tooltipElement.classList.add('req-forge-tooltip-top');
+		} else {
+			tooltipElement.classList.remove('req-forge-tooltip-top');
+		}
 
 		const circle = document.createElement('div');
 		circle.classList.add('circle', getClassNameForError(error));
