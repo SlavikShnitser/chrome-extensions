@@ -416,18 +416,18 @@
 				suggestSection.appendChild(element);
 			});
 			tooltipElement.appendChild(suggestSection);
-
-			if (inputElement === modalTextArea) {
-				document.body.appendChild(tooltipElement);
-			} else {
-				inputElement.parentElement.appendChild(tooltipElement);
-			}
 		}
 
 		const details = document.createElement('div');
 		details.classList.add('details');
 		details.innerText = error.details;
 		tooltipElement.appendChild(details);
+
+		if (inputElement === modalTextArea) {
+			document.body.appendChild(tooltipElement);
+		} else {
+			inputElement.parentElement.appendChild(tooltipElement);
+		}
 	}
 
 	function hideTooltip() {
