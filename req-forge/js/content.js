@@ -76,6 +76,8 @@
 .req-forge-tooltip {
 	display: none;
 	position: fixed;
+	margin-top: -5px;
+  border-top: 5px solid transparent;
   transform: translateX(-50%);
 	width: max-content;
   max-width: 500px;
@@ -88,6 +90,8 @@
   z-index: ${MODAL_Z_INDEX + 1};
 }
 .req-forge-tooltip.req-forge-tooltip-top {
+	margin-top: 5px;
+  border-bottom: 5px solid transparent;
 	transform: translate(-50%, calc(-100% - 10px));
 }
 .req-forge-tooltip.active {
