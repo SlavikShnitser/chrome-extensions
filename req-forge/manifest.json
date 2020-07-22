@@ -1,0 +1,43 @@
+{
+	"manifest_version": 2,
+	"name": "ReqForge for Chrome",
+	"short_name": "ReqForge",
+	"version": "0.1",
+	"description": "Check the quality of your User Stories, Acceptance Criteria, Functional Requirements.\nReqForge employs Machine Learning and Natural Language Processing to help you quickly write any requirements.",
+
+	"icons": {
+		"16": "assets/icon-16px.png",
+		"48": "assets/icon-48px.png",
+		"128": "assets/icon-128px.png"
+	},
+
+	"permissions": [
+		"activeTab",
+		"contextMenus",
+		"https://fonts.googleapis.com/"
+	],
+
+	"background": {
+		"scripts": [
+			"js/background.js"
+		],
+		"persistent": true
+	},
+
+	"content_scripts": [{
+		"matches": ["<all_urls>"],
+		"js": [
+			"js/content.js"
+		]
+	}],
+
+	"web_accessible_resources": [
+		"dist/index.html",
+		"assets/icon-48px.png"
+	],
+
+	"browser_action": {
+		"default_icon": "assets/icon-48px.png",
+		"default_title": "ReqForge"
+	}
+}
