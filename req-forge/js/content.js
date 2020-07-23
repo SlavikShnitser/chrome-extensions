@@ -185,6 +185,7 @@
 .req-forge-modal > iframe {
 	width: 100%;
 	height: calc(100% - 61px);
+	border: none;
 }
 `;
 
@@ -545,8 +546,6 @@
 		modalElement.appendChild(modalHeader);
 
 		modalIframe = document.createElement('iframe');
-		modalIframe.frameBorder = '0';
-		modalIframe.setAttribute("src", chrome.extension.getURL('dist/index.html'));
 		modalElement.appendChild(modalIframe);
 
 		modalWrapper.addEventListener('click', () => closeModal());
@@ -555,12 +554,17 @@
 	}
 
 	function showModal(text) {
+		modalIframe.setAttribute("src", getIframeSrc());
+		modalIframe.onload = () => modalIframe.contentWindow.postMessage(text, "*");
 		modalWrapper.classList.remove('req-forge-hidden');
-		modalIframe.contentWindow.postMessage(text, "*");
 	}
 
 	function closeModal() {
 		modalWrapper.classList.add('req-forge-hidden');
+	}
+
+	function getIframeSrc() {
+		return chrome.extension.getURL('dist/index.html') + '?hash=' + Date.now();
 	}
 
 	/**
