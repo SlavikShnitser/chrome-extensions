@@ -4,12 +4,10 @@ const REQUEST_DELAY = 400; // value in milliseconds
 const CONFIG = {
 	'https://reqforge.atlassian.net/': [
 		{
-			selector: '[data-test-id="platform-inline-card-create.ui.form.summary.styled-text-area"]',
-			checkOnActive: true
+			selector: '[data-test-id="platform-inline-card-create.ui.form.summary.styled-text-area"]'
 		},
 		{
-			selector: '[data-test-id="issue.views.issue-base.foundation.summary.heading.writeable"] textarea',
-			checkOnActive: true
+			selector: '[data-test-id="issue.views.issue-base.foundation.summary.heading.writeable"] textarea'
 		}
 	]
 };

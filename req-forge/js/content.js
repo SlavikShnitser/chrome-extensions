@@ -244,9 +244,8 @@
 	 * For a given input/textarea creates [[highlightsWrapper]] and [[extensionButton]].
 	 * Adds resize and scroll event listeners.
 	 * @param inputElement Input or text area.
-	 * @param checkOnActive {boolean}
 	 */
-	function decorateElement(inputElement, checkOnActive) {
+	function decorateElement(inputElement) {
 		if (inputHighlightMap.has(inputElement)) {
 			return;
 		}
@@ -254,13 +253,10 @@
 
 		const highlightsWrapper = document.createElement("div");
 		highlightsWrapper.classList.add('req-forge-highlights');
-		if (shouldBeHidden) {
-			highlightsWrapper.classList.add('req-forge-hidden');
-		}
-
 		const extensionButton = document.createElement('div');
 		extensionButton.classList.add('req-forge-icon');
 		if (shouldBeHidden) {
+			highlightsWrapper.classList.add('req-forge-hidden');
 			extensionButton.classList.add('req-forge-hidden');
 		}
 		extensionButton.addEventListener('click', () => showModal(inputElement.value));
@@ -277,21 +273,17 @@
 			for (let [key, value] of inputHighlightMap) {
 				const methodName = key !== inputElement ? 'add' : 'remove';
 				value.highlightsWrapper.classList[methodName]('req-forge-hidden');
-				if (!checkOnActive) {
-					value.extensionButton.classList[methodName]('req-forge-hidden');
-				}
+				value.extensionButton.classList[methodName]('req-forge-hidden');
 			}
 		});
 
 		let timeout;
 		inputElement.onkeydown = () => {
 			highlightsWrapper.innerHTML = '';
-			if (checkOnActive) {
-				if (timeout) {
-					clearTimeout(timeout);
-				}
-				timeout = setTimeout(() => validateInput(inputElement), REQUEST_DELAY);
+			if (timeout) {
+				clearTimeout(timeout);
 			}
+			timeout = setTimeout(() => validateInput(inputElement), REQUEST_DELAY);
 		};
 
 		new ResizeObserver(() => {
@@ -310,9 +302,7 @@
 		inputElement.parentElement.insertBefore(extensionButton, inputElement);
 		inputElement.parentElement.insertBefore(highlightsWrapper, inputElement);
 
-		if (checkOnActive) {
-			validateInput(inputElement);
-		}
+		validateInput(inputElement);
 	}
 
 	/**
@@ -333,7 +323,7 @@
 		extensionButton.style.width = `${extensionButtonSize}px`;
 		extensionButton.style.height = `${extensionButtonSize}px`;
 		extensionButton.style.top = `${top + height - extensionButtonSize}px`;
-		extensionButton.style.left = `${left + width - extensionButtonSize - 70}px`;
+		extensionButton.style.left = `${left + width - extensionButtonSize - 12}px`;
 	}
 
 	/**
@@ -573,7 +563,7 @@
 	function parsePageInputs(pageConfig) {
 		pageConfig.forEach(configItem => {
 			const textAreas = document.querySelectorAll(configItem.selector);
-			[...textAreas].forEach(element => decorateElement(element, configItem.checkOnActive));
+			[...textAreas].forEach(element => decorateElement(element));
 		});
 	}
 
@@ -589,8 +579,7 @@
 
 		getConfigurationForPage(pageConfig => {
 			pageConfig.push({
-				selector: '.req-forge-modal-textarea',
-				checkOnActive: false
+				selector: '.req-forge-modal-textarea'
 			});
 			setInterval(() => {
 				parsePageInputs(pageConfig);
