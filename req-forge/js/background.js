@@ -1,3 +1,5 @@
+// const ENV = "dev";
+const ENV = "prod";
 
 const REQUEST_DELAY = 400; // value in milliseconds
 
@@ -21,7 +23,7 @@ const CONFIG = {
  * @returns {Promise} An array of errors.
  */
 async function checkString(textData) {
-	const response = await fetch('https://dev.api.reqforge.com/analyze', {
+	const response = await fetch(`https://${ENV}.api.reqforge.com/analyze`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'text/plain',
