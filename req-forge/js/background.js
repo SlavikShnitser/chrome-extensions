@@ -8,6 +8,9 @@ const CONFIG = {
 		},
 		{
 			selector: '[data-test-id="issue.views.issue-base.foundation.summary.heading.writeable"] textarea'
+		},
+		{
+			selector: '#summary'
 		}
 	]
 };

@@ -322,8 +322,15 @@
 
 		extensionButton.style.width = `${extensionButtonSize}px`;
 		extensionButton.style.height = `${extensionButtonSize}px`;
-		extensionButton.style.top = `${top + height - extensionButtonSize}px`;
+
 		extensionButton.style.left = `${left + width - extensionButtonSize - 12}px`;
+		if (inputElement.tagName === "INPUT") {
+			// for the inputs align icon vertically
+			extensionButton.style.top = `${top + (height - extensionButtonSize) / 2}px`;
+		} else {
+			// for text areas show icon on the bottom
+			extensionButton.style.top = `${top + height - extensionButtonSize}px`;
+		}
 	}
 
 	/**
