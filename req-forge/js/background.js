@@ -1,20 +1,23 @@
-// const ENV = "dev";
-const ENV = "prod";
+const ENV = "dev";
+// const ENV = "prod";
 
 const REQUEST_DELAY = 400; // value in milliseconds
 
+const JIRA_CONFIG = {
+	selectors: [
+		'textarea',
+		'input',
+		'div[contenteditable=true]'
+	],
+	wordsToSkip: ['search']
+}
+const EMPTY_CONFIG = {
+	selectors: [],
+	wordsToSkip: []
+};
 const CONFIG = {
-	'https://reqforge.atlassian.net/': [
-		{
-			selector: '[data-test-id="platform-inline-card-create.ui.form.summary.styled-text-area"]'
-		},
-		{
-			selector: '[data-test-id="issue.views.issue-base.foundation.summary.heading.writeable"] textarea'
-		},
-		{
-			selector: '#summary'
-		}
-	]
+	'jira': JIRA_CONFIG,
+	'atlassian': JIRA_CONFIG
 };
 
 /**
@@ -57,9 +60,9 @@ const onMessageReceived = (message, sender, sendResponse) => {
 			break;
 		case "get_config":
 			const configKey = Object.keys(CONFIG).find(key => {
-				return message.url.startsWith(key);
+				return message.url.includes(key);
 			});
-			sendResponse(configKey ? CONFIG[configKey] : []);
+			sendResponse(configKey ? CONFIG[configKey] : EMPTY_CONFIG);
 			break;
 		case "get_request_delay":
 			sendResponse(REQUEST_DELAY);

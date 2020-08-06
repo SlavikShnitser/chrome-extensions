@@ -209,10 +209,10 @@
 	];
 
 	const inputHighlightMap = new Map();
+	let activeInputElement;
 	let tooltipElement;
 	let modalWrapper;
 	let modalIframe;
-	let activeInput;
 	let REQUEST_DELAY = 400;
 
 	/**
@@ -259,17 +259,15 @@
 			highlightsWrapper.classList.add('req-forge-hidden');
 			extensionButton.classList.add('req-forge-hidden');
 		}
-		extensionButton.addEventListener('click', () => showModal(inputElement.value));
+		extensionButton.addEventListener('click', () => showModal(getInputValue(inputElement), inputElement));
 
 		inputHighlightMap.set(inputElement, {
 			highlightsWrapper, extensionButton
 		});
 
-		copyDimensions(inputElement, highlightsWrapper, extensionButton);
-		copyStyles(inputElement, highlightsWrapper);
+		updateStylesAndDimensions(inputElement, highlightsWrapper, extensionButton);
 
 		inputElement.addEventListener('focus', () => {
-			activeInput = inputElement;
 			for (let [key, value] of inputHighlightMap) {
 				const methodName = key !== inputElement ? 'add' : 'remove';
 				value.highlightsWrapper.classList[methodName]('req-forge-hidden');
@@ -287,22 +285,27 @@
 		};
 
 		new ResizeObserver(() => {
-			copyDimensions(inputElement, highlightsWrapper, extensionButton);
+			updateStylesAndDimensions(inputElement, highlightsWrapper, extensionButton);
 		}).observe(inputElement);
 
 		let parent = inputElement.parentElement;
 		while (parent) {
-			parent.addEventListener('resize', () => copyDimensions(inputElement, highlightsWrapper, extensionButton));
-			parent.addEventListener('scroll', () => copyDimensions(inputElement, highlightsWrapper, extensionButton));
+			parent.addEventListener('resize', () => updateStylesAndDimensions(inputElement, highlightsWrapper, extensionButton));
+			parent.addEventListener('scroll', () => updateStylesAndDimensions(inputElement, highlightsWrapper, extensionButton));
 			parent = parent.parentElement;
 		}
-		window.addEventListener('resize', () => copyDimensions(inputElement, highlightsWrapper, extensionButton));
-		window.addEventListener('scroll', () => copyDimensions(inputElement, highlightsWrapper, extensionButton));
+		window.addEventListener('resize', () => updateStylesAndDimensions(inputElement, highlightsWrapper, extensionButton));
+		window.addEventListener('scroll', () => updateStylesAndDimensions(inputElement, highlightsWrapper, extensionButton));
 
 		inputElement.parentElement.insertBefore(extensionButton, inputElement);
 		inputElement.parentElement.insertBefore(highlightsWrapper, inputElement);
 
 		validateInput(inputElement);
+	}
+
+	function updateStylesAndDimensions(inputElement, highlightsWrapper, extensionButton) {
+		copyDimensions(inputElement, highlightsWrapper, extensionButton);
+		copyStyles(inputElement, highlightsWrapper);
 	}
 
 	/**
@@ -313,12 +316,26 @@
 	 * @param extensionButton Extension button related to the [[inputElement]].
 	 */
 	function copyDimensions(inputElement, highlightsWrapper, extensionButton) {
-		const { width, height, top, left } = inputElement.getBoundingClientRect();
+		let { width, height, top, left } = inputElement.getBoundingClientRect();
+		const styleMap = inputElement.computedStyleMap();
+		const marginTop = styleMap.has('margin-top')
+			? styleMap.get('margin-top').toString()
+			: '0';
+		const marginRight = styleMap.has('margin-right')
+			? styleMap.get('margin-right').toString()
+			: '0';
+		const marginBottom = styleMap.has('margin-bottom')
+			? styleMap.get('margin-bottom').toString()
+			: '0';
+		const marginLeft = styleMap.has('margin-left')
+			? styleMap.get('margin-left').toString()
+			: '0';
+
 		const extensionButtonSize = 20;
 		highlightsWrapper.style.width = `${width}px`;
 		highlightsWrapper.style.height = `${height}px`;
-		highlightsWrapper.style.top = `${top}px`;
-		highlightsWrapper.style.left = `${left}px`;
+		highlightsWrapper.style.top = `calc(${top}px - ${marginTop})`;
+		highlightsWrapper.style.left = `calc(${left}px - ${marginLeft})`;
 
 		extensionButton.style.width = `${extensionButtonSize}px`;
 		extensionButton.style.height = `${extensionButtonSize}px`;
@@ -328,8 +345,8 @@
 			// for the inputs align icon vertically
 			extensionButton.style.top = `${top + (height - extensionButtonSize) / 2}px`;
 		} else {
-			// for text areas show icon on the bottom
-			extensionButton.style.top = `${top + height - extensionButtonSize}px`;
+			// for text areas and divs show icon on the bottom
+			extensionButton.style.top = `calc(${top + height - extensionButtonSize}px + ${marginBottom})`;
 		}
 	}
 
@@ -350,7 +367,7 @@
 
 	function validateInput(inputElement) {
 		const highlightsWrapper = inputHighlightMap.get(inputElement).highlightsWrapper;
-		const value = inputElement.value.replace(TWO_OR_MORE_SPACES_REGEXP, ' ').replace(FIRST_CHARACTER_SPACE_REGEXP, '');
+		const value = getInputValue(inputElement).replace(TWO_OR_MORE_SPACES_REGEXP, ' ').replace(FIRST_CHARACTER_SPACE_REGEXP, '');
 		checkString(value, (errors) => {
 			const [html, combinedErrors] = highlightWords(errors, value);
 			highlightsWrapper.innerHTML = html;
@@ -426,11 +443,27 @@
 	}
 
 	function suggestionClickHandler(inputElement, text, beginOffset, endOffset) {
-		inputElement.value = replaceWord(inputElement.value, text, beginOffset, endOffset);
-		inputElement.dispatchEvent(new Event('change', { 'bubbles': true }));
-		inputHighlightMap.get(inputElement).highlightsWrapper.innerHTML = '';
-		validateInput(inputElement);
+		const value = replaceWord(getInputValue(inputElement), text, beginOffset, endOffset);
+		setInputValue(inputElement, value);
 		hideTooltip();
+	}
+
+	function getInputValue(input) {
+		return input.tagName === 'DIV'
+			? input.textContent
+			: input.value;
+	}
+
+	function setInputValue(input, value) {
+		if (input.tagName === 'DIV') {
+			input.textContent = value;
+		} else {
+			input.value = value;
+		}
+
+		input.dispatchEvent(new Event('change', { 'bubbles': true }));
+		inputHighlightMap.get(input).highlightsWrapper.innerHTML = '';
+		validateInput(input);
 	}
 
 	const highlightWords = (data, newTextData) => {
@@ -548,15 +581,29 @@
 		modalWrapper.addEventListener('click', () => closeModal());
 		modalWrapper.appendChild(modalElement);
 		document.body.appendChild(modalWrapper);
+		window.addEventListener("message", onMessageFromIframeReceived, false);
 	}
 
-	function showModal(text) {
+	function onMessageFromIframeReceived(event) {
+		if (event.data.type === 'GET_TEXT' && activeInputElement) {
+			setInputValue(activeInputElement, event.data.text);
+		}
+	}
+
+	function showModal(text, inputElement) {
+		activeInputElement = inputElement;
 		modalIframe.setAttribute("src", getIframeSrc());
-		modalIframe.onload = () => modalIframe.contentWindow.postMessage(text, "*");
+		modalIframe.onload = () => modalIframe.contentWindow.postMessage({
+			type: 'SET_TEXT',
+			text
+		}, "*");
 		modalWrapper.classList.remove('req-forge-hidden');
 	}
 
 	function closeModal() {
+		modalIframe.contentWindow.postMessage({
+			type: 'GET_TEXT'
+		}, "*");
 		modalWrapper.classList.add('req-forge-hidden');
 	}
 
@@ -568,9 +615,17 @@
 	 * Finds specified text ares on the page and adds event listeners to them.
 	 */
 	function parsePageInputs(pageConfig) {
-		pageConfig.forEach(configItem => {
-			const textAreas = document.querySelectorAll(configItem.selector);
-			[...textAreas].forEach(element => decorateElement(element));
+		const { selectors, wordsToSkip } = pageConfig;
+		selectors.forEach(selector => {
+			[...document.querySelectorAll(selector)]
+				.filter(element => {
+					return wordsToSkip.every(word => {
+						const validName = element.name === undefined || !element.name.includes(word);
+						const validID = element.id === undefined || !element.id.includes(word);
+						return validName && validID;
+					});
+				})
+				.forEach(element => decorateElement(element));
 		});
 	}
 
@@ -585,9 +640,6 @@
 		getRequestDelay(delay => REQUEST_DELAY = delay);
 
 		getConfigurationForPage(pageConfig => {
-			pageConfig.push({
-				selector: '.req-forge-modal-textarea'
-			});
 			setInterval(() => {
 				parsePageInputs(pageConfig);
 			}, 1000);
