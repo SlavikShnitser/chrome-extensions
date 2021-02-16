@@ -1,18 +1,23 @@
+import { Message } from "./constants";
+
 /** Local storage key to store bitcoin amount. */
 const storageKey = "BITCOIN_EXTENSION_AMOUNT";
 
 /** Returns amount of bitcoins. */
-function getBitcoinAmount() {
+function getBitcoinAmount(): number {
 	const valueInStorage = localStorage.getItem(storageKey);
 	return valueInStorage ? +valueInStorage : 0;
 }
 
+// TODO
+type BuySellCallback = (data: { amount?: number, error?: string }) => void;
+
 /**
  * Increase amount of bitcoins by provided value. Calls `callback` with new amount.
  */
-function buyBitcoins(amountToBuy, callback) {
+function buyBitcoins(amountToBuy: number, callback: BuySellCallback): void {
 	const amount = getBitcoinAmount() + amountToBuy;
-	localStorage.setItem(storageKey, amount);
+	localStorage.setItem(storageKey, amount + "");
 	callback({ amount });
 }
 
@@ -20,13 +25,13 @@ function buyBitcoins(amountToBuy, callback) {
  * Decrease amount of bitcoins by provided value if possible. Otherwise calls `callback` with error
  * message.
  */
-function sellBitcoins(amountToSell, callback) {
+function sellBitcoins(amountToSell: number, callback: BuySellCallback): void {
 	let amount = getBitcoinAmount();
 	if (amount - amountToSell < 0) {
 		callback({ error: `You do not have enough bitcoins! Current balance: ${amount}.` });
 	} else {
 		amount -= amountToSell;
-		localStorage.setItem(storageKey, amount);
+		localStorage.setItem(storageKey, amount + "");
 		callback({ amount });
 	}
 }
@@ -35,9 +40,11 @@ function sellBitcoins(amountToSell, callback) {
  * Filters all tabs to find an active one and send message to it.
  * @param message Object with type an payload.
  */
-function sendMessageToActiveTab(message) {
+function sendMessageToActiveTab(message: Message): void {
+	// @ts-ignore
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 		const activeTab = tabs[0];
+		// @ts-ignore
 		chrome.tabs.sendMessage(activeTab.id, message);
 	});
 }
@@ -48,7 +55,7 @@ function sendMessageToActiveTab(message) {
  * @param sender Message sender.
  * @param sendResponse Function to call when you have a response.
  */
-function onMessageReceived(message, sender, sendResponse) {
+function onMessageReceived(message: Message, sender: any, sendResponse: BuySellCallback): void {
 	switch (message.type) {
 		case "GET_AMOUNT":
 			sendResponse({ amount: getBitcoinAmount() });
@@ -66,7 +73,8 @@ function onMessageReceived(message, sender, sendResponse) {
 /**
  * Initialization function.
  */
-function init() {
+function init(): void {
+	// @ts-ignore
 	chrome.runtime.onMessage.addListener(onMessageReceived);
 }
 
