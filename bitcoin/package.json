@@ -4,9 +4,9 @@
   "description": "",
   "scripts": {
     "build": "npm run build-bg && npm run build-content && npm run build-css && npm run copy-assets",
-    "build-bg": "parcel build src/js/background.ts -d dist",
-    "build-content": "parcel build src/js/content.ts -d dist",
-    "build-css": "node-sass --output-style expanded --source-map true --source-map-contents true --precision 6 src/styles/content.scss dist/content.css",
+    "build-bg": "parcel build src/js/background.ts --no-minify -d dist",
+    "build-content": "parcel build src/js/content.ts --no-minify -d dist",
+    "build-css": "node-sass --output-style compressed src/styles/content.scss dist/content.css",
     "copy-assets": "copyfiles manifest.json dist && copyfiles -u 1 src/assets/* dist"
   },
   "author": "",
