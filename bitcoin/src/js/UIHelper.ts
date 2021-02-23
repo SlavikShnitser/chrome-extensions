@@ -1,4 +1,6 @@
-
+/**
+ * An interface for HTML configuration object used by [[UIHelper]] class.
+ */
 export interface HTMLConfig {
   tagName: string;
   className?: string;

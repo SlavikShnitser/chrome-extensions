@@ -9,7 +9,7 @@ function getBitcoinAmount(): number {
 	return valueInStorage ? +valueInStorage : 0;
 }
 
-// TODO
+/** Function type for buy/sell bitcoin callback. */
 type BuySellCallback = (data: { amount?: number, error?: string }) => void;
 
 /**

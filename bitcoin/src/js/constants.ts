@@ -5,6 +5,9 @@
  */
 export const CSS_PREFIX = "bitcoin-extension";
 
+/**
+ * Represents messages that allows to communicate between content and background scripts.
+ */
 export interface Message {
     type: string;
     [key: string]: any;
