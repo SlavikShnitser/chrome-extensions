@@ -1,12 +1,17 @@
 # chrome-extensions
 List of custom Chrome extensions.
 
+## bitcoin
+Adds a sticky panel to the bitcoin.org web page.
+> #### Has TS and SCSS support
+> Uses **content** and **background** scripts.
+
 ## google-maps-context-menu
 Adds new item to the context menu on google maps web page.
 > Uses **content** script only.
 
 ## google-maps-search
-Adds new item to the default browser context menu if some text is selected on the page. Runs on all web pages by default.
+Adds a new item to the default browser context menu if any text has been selected on the page. Works on all web pages by default.
 > Uses **background** script only.
 
 ## shutterstock-keywords-saver
@@ -14,5 +19,5 @@ Adds a new button on shutterstock image page that copying keywords. All selected
 > Uses **content**, **background** and **popup** scripts.
 
 ## words-replacer
-Replaces all words on the web page with another words. Rules for replacement specified in the file. Runs on active web page after extension icon was clicked.
+Replaces all words on the web page with other words. Rules for replacement specified in the file. Runs on active web page after extension icon has been clicked.
 > Uses **content** and **background** scripts.
