@@ -1,0 +1,13 @@
+button.shutterstock-extension__copy-btn {
+    box-shadow: none;
+    color: #0070f0;
+    padding: 0 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    outline: none;
+}
+button.shutterstock-extension__copy-btn:hover {
+    color: rgba(12,18,28,.87);
+}
